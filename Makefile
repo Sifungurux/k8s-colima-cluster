@@ -19,8 +19,11 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 # ── Configuration (override via env or CLI) ───────────────────────────────────
-COLIMA_PROFILE  ?= k8s
-CLUSTER_NAME    ?= dev-cluster
+# Set CLUSTER=<name> to use a different cluster config from config/<name>/
+# e.g. CLUSTER=staging make start
+CLUSTER         ?= dev-cluster
+COLIMA_PROFILE  ?= $(CLUSTER)
+CLUSTER_NAME    ?= $(CLUSTER)
 SCRIPTS_DIR     := scripts
 
 export COLIMA_PROFILE

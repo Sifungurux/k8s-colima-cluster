@@ -13,8 +13,11 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 COLIMA_PROFILE="${COLIMA_PROFILE:-k8s}"
 CLUSTER_NAME="${CLUSTER_NAME:-dev-cluster}"
-COLIMA_CONFIG="${PROJECT_ROOT}/config/colima.yaml"
-K3D_CONFIG="${PROJECT_ROOT}/config/k3d-cluster.yaml"
+COLIMA_CONFIG="${PROJECT_ROOT}/config/${CLUSTER_NAME}/colima.yaml"
+K3D_CONFIG="${PROJECT_ROOT}/config/${CLUSTER_NAME}/k3d-cluster.yaml"
+
+[[ -f "${COLIMA_CONFIG}" ]] || { echo "[start] ERROR: No config found at ${COLIMA_CONFIG}. Create config/${CLUSTER_NAME}/ first." >&2; exit 1; }
+[[ -f "${K3D_CONFIG}" ]]   || { echo "[start] ERROR: No config found at ${K3D_CONFIG}. Create config/${CLUSTER_NAME}/ first." >&2; exit 1; }
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
 info()    { echo -e "${GREEN}[start]${NC} $*"; }
