@@ -1,0 +1,56 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# test-app.yaml – A minimal nginx Deployment + Service to verify the cluster
+#
+# Apply:   kubectl apply -f manifests/test-app.yaml
+# Test:    kubectl port-forward svc/test-app 8888:80
+#          curl http://localhost:8888
+# Remove:  kubectl delete -f manifests/test-app.yaml
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app
+  labels:
+    app: test-app
+spec:
+  replicas: 3          # one replica per worker node (spread via default scheduler)
+  selector:
+    matchLabels:
+      app: test-app
+  template:
+    metadata:
+      labels:
+        app: test-app
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: test-app
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-app
+spec:
+  selector:
+    app: test-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP

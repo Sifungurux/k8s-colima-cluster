@@ -1,0 +1,36 @@
+# Colima Configuration
+# Used as the container runtime backend for the k3d Kubernetes cluster.
+# Colima provides a Docker-compatible socket that k3d uses to spin up
+# containerised Kubernetes nodes.
+#
+# Adjust cpu / memory / disk to match your machine's resources.
+
+# Number of CPUs to allocate to the VM
+cpu: 4
+
+# Memory in GiB – 3 nodes × ~512 MiB overhead plus headroom
+memory: 8
+
+# Disk in GiB
+disk: 60
+
+# Use the VZ hypervisor on Apple Silicon (fastest); fall back to qemu on Intel
+# vmType: vz          # uncomment on Apple Silicon (macOS 13+)
+# rosetta: true       # uncomment on Apple Silicon to run x86 images natively
+
+# Container runtime: 'docker' lets k3d manage everything over the Docker socket
+runtime: docker
+
+# Kubernetes is intentionally disabled here – k3d handles that layer
+kubernetes:
+  enabled: false
+
+# Forward the Docker socket so that k3d can reach it
+forwardAgent: false
+
+# Network configuration
+network:
+  address: true        # expose host-reachable addresses for node IPs
+
+# SSH port (default 22232); change if you have a conflict
+sshPort: 22232

@@ -1,0 +1,81 @@
+# k3d Cluster Configuration
+# Topology: 1 control-plane (server) node + 2 worker (agent) nodes.
+#
+# k3d runs each node as a Docker container inside the Colima VM, giving you a
+# realistic multi-node cluster without the overhead of full VMs per node.
+#
+# Reference: https://k3d.io/usage/configfile/
+
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+
+metadata:
+  # Cluster name – also used as the kubeconfig context name
+  name: dev-cluster
+
+# ── Nodes ────────────────────────────────────────────────────────────────────
+
+# Number of control-plane (server) nodes
+servers: 1
+
+# Number of worker (agent) nodes
+agents: 2
+
+# ── Kubernetes version ────────────────────────────────────────────────────────
+
+image: rancher/k3s:v1.29.4-k3s1   # pin a specific k3s release for reproducibility
+
+# ── API server ────────────────────────────────────────────────────────────────
+
+kubeAPI:
+  # Expose the API server on localhost:6443 so kubectl works from your Mac
+  host: "0.0.0.0"
+  hostPort: "6443"
+
+# ── Port mappings ─────────────────────────────────────────────────────────────
+
+ports:
+  # Map host port 80  → port 80  on all agent nodes  (HTTP ingress)
+  - port: 8080:80
+    nodeFilters:
+      - agent:*
+  # Map host port 443 → port 443 on all agent nodes  (HTTPS ingress)
+  - port: 8443:443
+    nodeFilters:
+      - agent:*
+
+# ── Networking ────────────────────────────────────────────────────────────────
+
+network: k3d-dev-net           # dedicated Docker network (created automatically)
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+#
+# NOTE: Volume mounts are NOT defined here because Docker requires absolute host
+# paths and k3d config files don't support shell expansion.
+# The manifests volume is added dynamically in scripts/start-cluster.sh using
+# the resolved absolute path:
+#   --volume <absolute-path>/manifests:/var/lib/rancher/k3s/server/manifests/custom@all
+
+# ── k3s server flags ──────────────────────────────────────────────────────────
+
+options:
+  k3d:
+    wait: true                    # block until the cluster is fully ready
+    timeout: "120s"               # fail-fast if something hangs
+    disableLoadbalancer: false    # keep the k3d load-balancer container
+
+  k3s:
+    extraArgs:
+      # Disable Traefik – deploy your own ingress controller if needed
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+      # Use host network's DNS resolver
+      - arg: --resolv-conf=/etc/resolv.conf
+        nodeFilters:
+          - server:*
+          - agent:*
+
+  kubeconfig:
+    updateDefaultKubeconfig: true   # merge cluster entry into ~/.kube/config
+    switchCurrentContext: true      # automatically switch to the new context
