@@ -23,7 +23,7 @@ agents: 2
 
 # ── Kubernetes version ────────────────────────────────────────────────────────
 
-image: rancher/k3s:v1.29.4-k3s1   # pin a specific k3s release for reproducibility
+image: rancher/k3s:v1.33.0-k3s1   # must be >=1.33 for Flux 2.8+
 
 # ── API server ────────────────────────────────────────────────────────────────
 
