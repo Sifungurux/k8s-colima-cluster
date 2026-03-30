@@ -163,6 +163,23 @@ sequenceDiagram
     kubectl-->>User: all nodes Ready ✔
 ```
 
+## Why this repo is separate from k8s-fleet
+
+This repo provisions the cluster (Colima + k3d). [k8s-fleet](https://github.com/Sifungurux/k8s-fleet) defines what runs on it (Flux GitOps). They are intentionally kept as two separate repos.
+
+**Pros of keeping them separate**
+- `k8s-fleet` is cluster-agnostic — it can manage a local dev cluster, a staging cloud cluster, or both from the same repo
+- Flux watches `k8s-fleet` only; no need to filter out unrelated shell scripts and Colima configs
+- Different change frequencies — provisioning scripts change rarely, GitOps manifests change often
+- The GitOps layer can be shared or open-sourced independently of local machine setup
+
+**Cons (why you might consider merging)**
+- Two repos to clone and maintain
+- `FLUX_GITOPS_DIR` in the Makefile must point at the correct local path for `k8s-fleet`
+- Extra context switching for a solo developer
+
+> **Verdict:** keep them separate. The split pays off as soon as you add a second cluster (staging, CI, etc.) — `k8s-fleet` scales to manage all of them while this repo stays focused on local dev setup.
+
 ## Troubleshooting
 
 **Cluster won't start / times out**
