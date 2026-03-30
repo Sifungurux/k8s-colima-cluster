@@ -27,7 +27,7 @@ export COLIMA_PROFILE
 export CLUSTER_NAME
 
 # ── Phony targets ─────────────────────────────────────────────────────────────
-.PHONY: help setup start stop delete restart reset status logs kubeconfig clean
+.PHONY: help setup start stop delete restart reset status logs kubeconfig clean flux-bootstrap flux-status flux-reconcile
 
 help: ## Show this help message
 	@echo ""
@@ -70,3 +70,18 @@ clean: ## Delete the cluster and remove any generated artifacts
 	@bash $(SCRIPTS_DIR)/stop-cluster.sh --delete
 	@rm -f /tmp/k3d-$(CLUSTER_NAME).yaml
 	@echo "Clean complete."
+
+# ── Flux GitOps ───────────────────────────────────────────────────────────────
+FLUX_GITOPS_DIR ?= $(HOME)/development/k8s-fleet
+GITHUB_USER     ?= $(shell git -C $(FLUX_GITOPS_DIR) remote get-url origin 2>/dev/null | sed 's|.*github.com[:/]\([^/]*\)/.*|\1|')
+
+flux-bootstrap: ## Bootstrap Flux onto the cluster (GITHUB_USER=<user> make flux-bootstrap)
+	@GITHUB_USER="$(GITHUB_USER)" CLUSTER="$(CLUSTER_NAME)" CLUSTER_CONTEXT="k3d-$(CLUSTER_NAME)" \
+		bash $(FLUX_GITOPS_DIR)/bootstrap/bootstrap.sh
+
+flux-status: ## Show status of all Flux resources
+	@flux get all -A
+
+flux-reconcile: ## Force Flux to reconcile all kustomizations now
+	@flux reconcile kustomization infrastructure --timeout=2m
+	@flux reconcile kustomization apps --timeout=2m
