@@ -180,6 +180,54 @@ This repo provisions the cluster (Colima + k3d). [k8s-fleet](https://github.com/
 
 > **Verdict:** keep them separate. The split pays off as soon as you add a second cluster (staging, CI, etc.) — `k8s-fleet` scales to manage all of them while this repo stays focused on local dev setup.
 
+## Zabbix
+
+A full Zabbix 7.0 LTS stack (server, web, proxy, agent, PostgreSQL) can be deployed into a dedicated `zabbix` cluster.
+
+### Setup
+
+```bash
+# 1. Create secrets file (gitignored)
+cp helmfiles/zabbix/secrets.yaml.example helmfiles/zabbix/secrets.yaml
+# edit secrets.yaml and set postgresAccess.password
+
+# 2. Start the zabbix cluster
+CLUSTER=zabbix make start
+
+# 3. Install Zabbix
+CLUSTER=zabbix make zabbix-install
+
+# 4. Access the frontend
+kubectl port-forward svc/zabbix-zabbix-web 8888:80 -n zabbix
+# http://localhost:8888 — Admin / zabbix
+```
+
+### Zabbix targets
+
+| Target | Description |
+|---|---|
+| `CLUSTER=zabbix make zabbix-install` | Install or upgrade the Helm release |
+| `CLUSTER=zabbix make zabbix-uninstall` | Uninstall and delete the namespace |
+| `CLUSTER=zabbix make zabbix-status` | Show pods, services, port-forward command |
+
+### Configuration
+
+```
+helmfiles/zabbix/
+├── values.yaml      # Chart config (committed)
+└── secrets.yaml     # DB password (gitignored — copy from secrets.yaml.example)
+```
+
+### Known issues
+
+**Agent interface port (chart bug):** The chart sets the "Zabbix server" host interface to port `10052` instead of `10050`. `make zabbix-install` patches this automatically after every install.
+
+**Proxy registration (one-time manual step):** After first install, register the proxy in the frontend: `Administration → Proxies → Create proxy` — name `zabbix-proxy`, mode `Active`.
+
+**Agent sidecar required:** Keep `runAsSidecar: true` in `values.yaml`. The default "Zabbix server" host monitors the server pod via the sidecar agent — disabling it causes `Received empty response` errors.
+
+---
+
 ## Troubleshooting
 
 **Cluster won't start / times out**
