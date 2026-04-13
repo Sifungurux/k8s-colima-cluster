@@ -1,1 +1,2 @@
 .DS_Store
+helmfiles/zabbix/secrets.yaml
