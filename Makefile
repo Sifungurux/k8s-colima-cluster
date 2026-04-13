@@ -30,7 +30,7 @@ export COLIMA_PROFILE
 export CLUSTER_NAME
 
 # ── Phony targets ─────────────────────────────────────────────────────────────
-.PHONY: help setup start stop delete restart reset status logs kubeconfig clean flux-bootstrap flux-status flux-reconcile
+.PHONY: help setup start stop delete restart reset status logs kubeconfig clean flux-bootstrap flux-status flux-reconcile zabbix-install zabbix-uninstall zabbix-status
 
 help: ## Show this help message
 	@echo ""
@@ -88,3 +88,36 @@ flux-status: ## Show status of all Flux resources
 flux-reconcile: ## Force Flux to reconcile all kustomizations now
 	@flux reconcile kustomization infrastructure --timeout=2m
 	@flux reconcile kustomization apps --timeout=2m
+
+# ── Zabbix ────────────────────────────────────────────────────────────────────
+ZABBIX_NAMESPACE ?= zabbix
+ZABBIX_RELEASE   ?= zabbix
+ZABBIX_VALUES    := helmfiles/zabbix/values.yaml
+ZABBIX_SECRETS   := helmfiles/zabbix/secrets.yaml
+
+zabbix-install: ## Install or upgrade the Zabbix Helm release
+	@helm repo add zabbix-community https://zabbix-community.github.io/helm-zabbix 2>/dev/null || true
+	@helm repo update zabbix-community
+	@kubectl create namespace $(ZABBIX_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	@helm upgrade --install $(ZABBIX_RELEASE) zabbix-community/zabbix \
+		--namespace $(ZABBIX_NAMESPACE) \
+		--values $(ZABBIX_VALUES) \
+		--values $(ZABBIX_SECRETS) \
+		--wait --timeout 5m
+
+zabbix-uninstall: ## Uninstall Zabbix and delete the namespace
+	@helm uninstall $(ZABBIX_RELEASE) --namespace $(ZABBIX_NAMESPACE) || true
+	@kubectl delete namespace $(ZABBIX_NAMESPACE) --ignore-not-found
+
+zabbix-status: ## Show Zabbix pods, services, and port-forward command
+	@echo ""
+	@echo "Pods:"
+	@kubectl get pods -n $(ZABBIX_NAMESPACE)
+	@echo ""
+	@echo "Services:"
+	@kubectl get svc -n $(ZABBIX_NAMESPACE)
+	@echo ""
+	@echo "To access the Zabbix frontend:"
+	@echo "  kubectl port-forward svc/$(ZABBIX_RELEASE)-zabbix-web 8888:8080 -n $(ZABBIX_NAMESPACE)"
+	@echo "  Then open: http://localhost:8888"
+	@echo "  Default credentials: Admin / zabbix"
