@@ -104,6 +104,11 @@ zabbix-install: ## Install or upgrade the Zabbix Helm release
 		--values $(ZABBIX_VALUES) \
 		--values $(ZABBIX_SECRETS) \
 		--wait --timeout 5m
+	@echo "[zabbix] Patching 'Zabbix server' host agent interface port (chart bug: initialises to 10052 instead of 10050)..."
+	@kubectl exec -n $(ZABBIX_NAMESPACE) $(ZABBIX_RELEASE)-postgresql-0 -- \
+		psql -U zabbix -d zabbix -c \
+		"UPDATE interface SET port='10050' WHERE hostid=(SELECT hostid FROM hosts WHERE host='Zabbix server') AND type=1;" \
+		2>/dev/null && echo "[zabbix] Interface port corrected." || echo "[zabbix] WARN: could not patch interface port — fix manually in frontend."
 
 zabbix-uninstall: ## Uninstall Zabbix and delete the namespace
 	@helm uninstall $(ZABBIX_RELEASE) --namespace $(ZABBIX_NAMESPACE) || true
