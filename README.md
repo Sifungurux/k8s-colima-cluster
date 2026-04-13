@@ -184,15 +184,34 @@ This repo provisions the cluster (Colima + k3d). [k8s-fleet](https://github.com/
 
 **Cluster won't start / times out**
 - Run `make status` and check if Colima is running.
-- Increase `timeout` in `config/k3d-cluster.yaml`.
+- Increase `timeout` in `config/<cluster>/k3d-cluster.yaml`.
 - Try `make reset` to start fresh.
 
 **Cannot reach the API server**
 - Ensure port 6443 is not already in use: `lsof -i :6443`.
 
 **Docker: permission denied / daemon not found**
-- Make sure the Colima profile is running: `colima status --profile k8s`.
-- Re-export the socket: `export DOCKER_HOST=unix://$HOME/.colima/k8s/docker.sock`.
+- Make sure the Colima profile is running: `colima status <profile>`.
+- Re-export the socket: `export DOCKER_HOST=unix://$HOME/.colima/<profile>/docker.sock`.
 
-**Apple Silicon – slow image pulls**
-- Uncomment `vmType: vz` and `rosetta: true` in `config/colima.yaml` and recreate with `make reset`.
+**Apple Silicon – slow image pulls or Colima hangs at boot**
+- Ensure `vmType: vz` and `rosetta: true` are set in `config/<cluster>/colima.yaml`.
+- Without `vmType: vz`, Lima falls back to the usernet SSH forwarder which can hang indefinitely on Apple Silicon.
+
+**Colima reports "already running" but Docker socket is unreachable**
+
+The Colima profile is in a broken state (e.g. started with a bad config, or a previous run didn't clean up). Force-delete the profile and start fresh:
+
+```bash
+colima delete <profile>        # e.g. colima delete zabbix
+CLUSTER=<name> make start
+```
+
+**Config changes not being picked up**
+
+The start script only copies `config/<cluster>/colima.yaml` to `~/.colima/<profile>/colima.yaml` on first run. If you've changed the project config, delete the installed copy first:
+
+```bash
+rm ~/.colima/<profile>/colima.yaml
+CLUSTER=<name> make start
+```
