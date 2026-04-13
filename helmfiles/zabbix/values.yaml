@@ -1,0 +1,57 @@
+# Zabbix Helm Chart Values
+# Chart: zabbix-community/helm-zabbix
+# Docs:  https://github.com/zabbix-community/helm-zabbix
+#
+# Credentials go in secrets.yaml (gitignored). Required keys:
+#   postgresAccess.password
+
+# Zabbix version — 7.0 LTS
+zabbixImageTag: ubuntu-7.0.16
+
+# ── Database access ─────────────────────────────────────────────────────────
+# password is set in secrets.yaml
+postgresAccess:
+  user: "zabbix"
+  database: "zabbix"
+
+# ── PostgreSQL (bundled subchart) ────────────────────────────────────────────
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16"
+  persistence:
+    enabled: true
+    storageSize: 5Gi
+
+# ── Zabbix Server ────────────────────────────────────────────────────────────
+zabbixServer:
+  enabled: true
+  replicaCount: 1
+
+# ── Zabbix Web Frontend ──────────────────────────────────────────────────────
+zabbixWeb:
+  enabled: true
+  replicaCount: 1
+
+
+# ── Zabbix Proxy (active mode) ───────────────────────────────────────────────
+zabbixProxy:
+  enabled: true
+  replicaCount: 1
+  ZBX_PROXYMODE: 0                      # 0 = active, 1 = passive
+  ZBX_HOSTNAME: zabbix-proxy
+  ZBX_SERVER_HOST: zabbix-zabbix-server # <release>-zabbix-server (ClusterIP service)
+  ZBX_SERVER_PORT: 10051
+
+# ── Zabbix Agent ─────────────────────────────────────────────────────────────
+# runAsSidecar: runs inside the zabbix-server pod — required for the default
+#               "Zabbix server" host entry which checks zabbix-zabbix-server.zabbix.svc
+# runAsDaemonSet: runs on every node for node-level monitoring
+zabbixAgent:
+  enabled: true
+  runAsSidecar: true
+  runAsDaemonSet: true
+  ZBX_SERVER_HOST: 0.0.0.0/0
+  ZBX_PASSIVE_ALLOW: true
+  ZBX_ACTIVE_ALLOW: false
