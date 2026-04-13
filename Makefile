@@ -118,6 +118,6 @@ zabbix-status: ## Show Zabbix pods, services, and port-forward command
 	@kubectl get svc -n $(ZABBIX_NAMESPACE)
 	@echo ""
 	@echo "To access the Zabbix frontend:"
-	@echo "  kubectl port-forward svc/$(ZABBIX_RELEASE)-zabbix-web 8888:8080 -n $(ZABBIX_NAMESPACE)"
+	@echo "  kubectl port-forward svc/$(ZABBIX_RELEASE)-zabbix-web 8888:80 -n $(ZABBIX_NAMESPACE)"
 	@echo "  Then open: http://localhost:8888"
 	@echo "  Default credentials: Admin / zabbix"
